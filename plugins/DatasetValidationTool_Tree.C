@@ -166,17 +166,16 @@ DatasetValidationTool_Tree::analyze(const edm::Event& iEvent, const edm::EventSe
      nTracks++;
      std::cout<<track.pt()<<std::endl;
 
+     auto const &residuals = track.extra()->residuals();
+
      int h_index = 0;
      int nHits=0;
      for(auto iHit = track.recHitsBegin(); iHit!=track.recHitsEnd(); ++iHit,++h_index)
      {  
            ++nHits;     
-          double resX = track.residuals().residualX(2);
+          double resX = residuals().residualX(2);
           std::cout<<"Res: "<<resX<<std::endl;
-  
-   //        double resX = residuals.residualX(h_index);
-   //      std::cout<<"Residuals: "<<resX<<std::endl;
-           std::cout<<h_index<<std::endl;
+          std::cout<<h_index<<std::endl;
          
      }  //Hits Loop
     std::cout<<"HIts in track"<<nTracks<<": "<<nHits<<std::endl;
