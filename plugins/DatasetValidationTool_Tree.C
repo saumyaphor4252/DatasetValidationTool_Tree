@@ -83,7 +83,7 @@
 #include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
 #include "MagneticField/Engine/interface/MagneticField.h"
 #include "MagneticField/Records/interface/IdealMagneticFieldRecord.h"
-
+#include "FWCore/Framework/interface/Run.h"
 #include <TTree.h>
 #include <TMath.h>
 //
@@ -110,10 +110,10 @@ class DatasetValidationTool_Tree: public edm::one::EDAnalyzer<edm::one::SharedRe
       virtual void analyze(const edm::Event&, const edm::EventSetup&) override;
       virtual void endJob() override;
 
-      // ----------member data ---------------------------
+       // ----------member data ---------------------------
       edm::EDGetTokenT<reco::TrackCollection> tracksToken_;
  
-      int nTracks,nEvents;//,nTracksInEvent,nEventsInRun,nTracksInRun;
+      int nTracks,nEvents;
       
 };
 
@@ -133,7 +133,7 @@ DatasetValidationTool_Tree::DatasetValidationTool_Tree(const edm::ParameterSet& 
 {
    //now do what ever initialization is needed
    usesResource("TFileService");
-   nTracks=0;nEvents=0;
+  nTracks=0; nEvents=0; 
 }
 
 
@@ -161,24 +161,18 @@ DatasetValidationTool_Tree::analyze(const edm::Event& iEvent, const edm::EventSe
     iEvent.getByToken(tracksToken_, trackCollection);
     const reco::TrackCollection tC = *(trackCollection.product());
 
-   for(const auto &track:tC)
-   {  
-     nTracks++;
-     std::cout<<track.pt()<<std::endl;
-
+   for (const auto &track : tC) 
+   {
      auto const &residuals = track.extra()->residuals();
-
      int h_index = 0;
-     int nHits=0;
-     for(auto iHit = track.recHitsBegin(); iHit!=track.recHitsEnd(); ++iHit,++h_index)
-     {  
-           ++nHits;     
-          double resX = residuals().residualX(2);
+     
+     for (trackingRecHit_iterator iHit = track.recHitsBegin(); iHit != track.recHitsEnd(); ++iHit, ++h_index)  
+     {
+          double resX = residuals.residualX(h_index);
           std::cout<<"Res: "<<resX<<std::endl;
-          std::cout<<h_index<<std::endl;
          
      }  //Hits Loop
-    std::cout<<"HIts in track"<<nTracks<<": "<<nHits<<std::endl;
+     nTracks++;
 
    } //Tracks Loop
 
@@ -206,10 +200,57 @@ DatasetValidationTool_Tree::beginJob()
 void 
 DatasetValidationTool_Tree::endJob() 
 {
-   std::cout<<"Events: "<<nEvents<<std::endl;
-   std::cout<<"Tracks: "<<nTracks<<std::endl;
+   //std::cout<<"Events: "<<nEvents<<std::endl;
+   //std::cout<<"Tracks: "<<nTracks<<std::endl;
  }
-
+/*
+bool isHit2D(const TrackingRecHit &hit)
+{
+     bool countStereoHitAs2D_ = true;
+     // we count SiStrip stereo modules as 2D if selected via countStereoHitAs2D_
+     // (since they provide theta information)
+     if (!hit.isValid() || (hit.dimension() < 2 && !countStereoHitAs2D_ && !dynamic_cast<const SiStripRecHit1D *>(&hit)))
+     {
+        return false;  // real RecHit1D - but SiStripRecHit1D depends on countStereoHitAs2D_
+     }
+     else 
+     {
+        const DetId detId(hit.geographicalId());
+        if (detId.det() == DetId::Tracker)
+        {
+           if (detId.subdetId() == kBPIX || detId.subdetId() == kFPIX)
+           {
+              return true;  // pixel is always 2D
+           }
+           else
+           {        // should be SiStrip now
+              const SiStripDetId stripId(detId);
+              if(stripId.stereo())  return countStereoHitAs2D_;  // stereo modules
+              else if (dynamic_cast<const SiStripRecHit1D *>(&hit) || dynamic_cast<const SiStripRecHit2D *>(&hit)return false;  // rphi modules hit
+              //the following two are not used any more since ages...
+              else if (dynamic_cast<const SiStripMatchedRecHit2D *>(&hit)) return true;  // matched is 2D
+              else if (dynamic_cast<const ProjectedSiStripRecHit2D *>(&hit))
+              {
+                 const ProjectedSiStripRecHit2D *pH = static_cast<const ProjectedSiStripRecHit2D *>(&hit);
+                 return (countStereoHitAs2D_ && this->isHit2D(pH->originalHit()));  // depends on original...
+              }
+              else 
+              {  edm::LogError("UnkownType") << "@SUB=DMRChecker::isHit2D"
+                                         << "Tracker hit not in pixel, neither SiStripRecHit[12]D nor "
+                                         << "SiStripMatchedRecHit2D nor ProjectedSiStripRecHit2D.";
+                 return false;
+              }
+            } 
+         }
+         else 
+         {   // not tracker??
+             edm::LogWarning("DetectorMismatch") << "@SUB=DMRChecker::isHit2D"
+                                             << "Hit not in tracker with 'official' dimension >=2.";
+             return true;  // dimension() >= 2 so accept that...
+          }
+     }// never reached...
+}
+*/
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
 void
 DatasetValidationTool_Tree::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
