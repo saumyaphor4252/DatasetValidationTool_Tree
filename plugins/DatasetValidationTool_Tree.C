@@ -156,37 +156,33 @@ DatasetValidationTool_Tree::analyze(const edm::Event& iEvent, const edm::EventSe
 {
 
    using namespace edm;
+   
+   edm::Handle<reco::TrackCollection> trackCollection;
+   iEvent.getByToken(tracksToken_, trackCollection);
+   const reco::TrackCollection tC = *(trackCollection.product());
 
-    edm::Handle<reco::TrackCollection> trackCollection;
-    iEvent.getByToken(tracksToken_, trackCollection);
-    const reco::TrackCollection tC = *(trackCollection.product());
+   for (const auto &track : tC) {
 
-   for (const auto &track : tC) 
-   {
-     auto const &residuals = track.extra()->residuals();
-     int h_index = 0;
-     
-     for (trackingRecHit_iterator iHit = track.recHitsBegin(); iHit != track.recHitsEnd(); ++iHit, ++h_index)  
-     {
-          double resX = residuals.residualX(h_index);
-          std::cout<<"Res: "<<resX<<std::endl;
+     auto const& trajParams = track.extra()->trajParams();
+     auto const& residuals = track.extra()->residuals();
+
+     assert(trajParams.size() == track.recHitsSize());
+     auto hb = track.recHitsBegin();
+     for (unsigned int h = 0; h < track.recHitsSize(); h++) {
+       auto hit = *(hb + h);
+       if (!hit->isValid())
+	 continue;
+       
+       auto resX = residuals.residualX(h);
+       auto resY = residuals.residualY(h);
+
+       std::cout<<"ResX: "<<resX<<std::endl;
+       std::cout<<"ResY: "<<resY<<std::endl;
          
      }  //Hits Loop
      nTracks++;
-
    } //Tracks Loop
-
    nEvents++;
-
-#ifdef THIS_IS_AN_EVENT_EXAMPLE
-   Handle<ExampleData> pIn;
-   iEvent.getByLabel("example",pIn);
-#endif
-   
-#ifdef THIS_IS_AN_EVENTSETUP_EXAMPLE
-   ESHandle<SetupData> pSetup;
-   iSetup.get<SetupRecord>().get(pSetup);
-#endif
 }
 
 
